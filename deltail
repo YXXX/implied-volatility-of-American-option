@@ -1,0 +1,11 @@
+//去除掉单词的后缀
+def deltail(word,newtext):
+    tails=['es','ing','ed','ality']
+    flag=0
+    for suffix in tails:
+        if word.endswith(suffix):
+            newtext.append(word[:-len(suffix)])
+            flag=flag+1
+    if flag==0:
+        newtext.append(word)
+    return newtext
