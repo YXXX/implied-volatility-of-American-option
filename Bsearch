@@ -1,0 +1,40 @@
+#二叉树进行波动率搜索
+
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 28 16:49:33 2018
+
+@author: yangxin
+"""
+from binomialCallAmerican import binomialCallAmerican,binomialCallAmerican1
+
+def binary_section(a,b,S,K,T,C,r,tol,cp,maxiter=100):
+      
+    
+    n = 1  # Start with 1 iteration  
+    if cp==1:
+        while n <= maxiter:
+        
+            c = (a+b)*0.5  
+            if binomialCallAmerican(S,K,T,r,c)-C == 0 or abs(a-b)*0.5 < tol:  
+            # Root is found or is very close    
+                return c
+            n=n+1 
+            if binomialCallAmerican(S,K,T,r,c)-C  < 0: 
+                a = c
+            else:
+                b = c      
+        return c
+    if cp==-1:
+        while n <= maxiter:
+        
+            c = (a+b)*0.5  
+            if binomialCallAmerican1(S,K,T,r,c)-C == 0 or abs(a-b)*0.5 < tol:  
+            # Root is found or is very close    
+                return c
+            n=n+1 
+            if binomialCallAmerican1(S,K,T,r,c)-C  < 0: 
+                a = c
+            else:
+                b = c      
+        return c  
