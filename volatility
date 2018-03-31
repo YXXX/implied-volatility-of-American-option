@@ -1,0 +1,74 @@
+#给定参数，遍历已经清理好的数据
+#利用二叉树求解出各个波动率
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 28 18:56:44 2018
+
+@author: yangxin
+"""
+
+import pandas as pd
+from bsearch import binary_section
+import os
+os.chdir("D:\prac\work\option2")
+names=pd.read_csv('resultname.csv',header=None)
+
+r=0.0
+tol=1e-4
+T=153.0/365
+
+Ks=range(2400,3400,50)
+i=0
+sp=0
+cp=0
+for name in names[0]:
+    data=pd.read_csv(name)
+    
+    sigma=[]  
+    if i<20:
+        K=Ks[i]
+        for k in range(len(data)):
+            if k==0:
+                S=data['S0_price'][k]
+                C=data['option_price'][k]
+                temp=binary_section(0,1,S,K,T,C,r,tol,1,maxiter=100)
+                sigma.append(temp)
+                sp=S
+                cp=C
+            else:
+                S=data['S0_price'][k]
+                C=data['option_price'][k]
+                if S==sp and C==cp:
+                    sigma.append(temp)
+                else:
+                    temp=binary_section(0,1,S,K,T,C,r,tol,1,maxiter=100)
+                    sigma.append(temp)
+                    sp=S
+                    cp=C
+            k=k+1
+        dsigma=pd.DataFrame(sigma)
+        dsigma.to_csv('vol%d.csv'%i,index=False)
+    else:
+        K=Ks[i-20]
+        for k in range(len(data)):
+            if k==0:
+                S=data['S0_price'][k]
+                C=data['option_price'][k]
+                temp=binary_section(0,1,S,K,T,C,r,tol,-1,maxiter=100)
+                sigma.append(temp)
+                sp=S
+                cp=C
+            else:
+                S=data['S0_price'][k]
+                C=data['option_price'][k]
+                if S==sp and C==cp:
+                    sigma.append(temp)
+                else:
+                    temp=binary_section(0,1,S,K,T,C,r,tol,-1,maxiter=100)
+                    sigma.append(temp)
+                    sp=S
+                    cp=C
+            k=k+1
+        dsigma=pd.DataFrame(sigma)
+        dsigma.to_csv('vol%d.csv'%i,index=False)
+    i=i+1
