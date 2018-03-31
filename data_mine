@@ -1,10 +1,148 @@
-=#数据描述
-数据是关于大豆M1809的期货价格和期权价格
+#=#数据描述
+#数据是关于大豆M1809的期货价格和期权价格
 
-首先21:00:00之后的数据是前一天，在排序的时候，要放在最开始
+#首先21:00:00之后的数据是前一天，在排序的时候，要放在最开始
 
-其次，数据的关键部分是bid_price1和ask_price，这两部分的平均当做此时刻的期货价格
-期权的价格与此相似。
+#其次，数据的关键部分是bid_price1和ask_price，这两部分的平均当做此时刻的期货价格
+#期权的价格与此相似。
 
-另外，期货价格S更新快，期权价格c更新慢，所以选一个期货价格之前最新的期权价格当做与此时期货价格对应的期权价格，认为满足c=f(S,K,sigma,r)
-K是执行价格。
+#另外，期货价格S更新快，期权价格c更新慢，所以选一个期货价格之前最新的期权价格当做与此时期货价格对应的期权价格，认为满足c=f(S,K,sigma,r)
+#K是执行价格。
+
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 21 19:26:10 2018
+
+@author: yangxin
+@email 1605525953@qq.com
+ma
+"""
+import winsound
+import pandas as pd
+import os
+os.chdir("D:\prac\work\option3")
+
+
+def operate(names):
+    """
+    这个函数用于匹配关键字，其中关键字是期权期货价格更新时间
+    最后会得到 n 开头的csv 文件，新的文件中，期权的关键字都跟期货的变得一致
+    
+    """
+    lenfiles=len(names)
+    file0=pd.read_csv(names[0][lenfiles-1]) ##读入期货价格表
+    
+    for filename in names[0][0:lenfiles-1]:                 ## 依次读入文件夹中期权表
+        indextemp=[]  
+        values=[]
+        svalues=[]
+        data=pd. DataFrame([]) 
+        file1=pd.read_csv(filename)  
+        count=0
+        for k in file1['key'][:]:
+            ## 查找期权价格是否在期货价格更新表中
+            if len(file0[k-file0['key']>=0]['key'])==0:
+                indextemp.append(file0['key'][0])
+                values.append((file0['bid_price1'][0]+file0['ask_price1'][0])/2.0)
+                svalues.append((file1['bid_price1'][count]+file1['ask_price1'][count])/2.0)
+                count=count+1
+            else:
+                indextemp.append(file0['key'][len(file0[k-file0['key']>=0])-1])
+                values.append((file0['bid_price1'][len(file0[k-file0['key']>=0])-1]+file0['ask_price1'][len(file0[k-file0['key']>=0])-1])/2.0)
+                svalues.append((file1['bid_price1'][count]+file1['ask_price1'][count])/2.0)
+                count=count+1
+            ## 将期权价格之前最新的期货价格关键字提取出来
+                
+                
+        newdataframe=pd.DataFrame(indextemp,columns=['key'])
+        dvalues=pd.DataFrame(values,columns=['S0_price'])   
+        #file1.drop(['key'],axis=1,inplace=True) 
+        
+        data.insert(0,'key',newdataframe)
+        data.insert(1,'S0_price',dvalues)
+        data.insert(2,'strike_price',svalues)
+        data.to_csv('n'+filename,index=False) 
+      
+      
+def dataclean(names):
+    """
+    从hh:mm:ss以及毫秒这种类型的数据
+    得到数据的关键字
+    文件写入到clean开头的csv文件中去
+    """
+    for filename in names[0][:]:
+        newkey=[]
+        file1=pd.read_csv(filename)
+        keys=file1[['update_time','update_millisec']]
+        
+        
+        for num in range(len(keys)):
+             key1,key2=keys.iloc[num,0],keys.iloc[num,1]
+             #if type(key1)==str and type(key2)==float :
+             newkey.append(str(key1).replace(':','').zfill(6)+str(int(key2)).zfill(3))
+             #else:
+              #   print num
+               #  break
+             #if tempkey>210000000:
+             #   tempkey=tempkey-210000000
+             #newkey.append(tempkey)
+             #else:
+             #   print num ,type(key1)
+             #   break
+        dfkey=pd.DataFrame(newkey)
+        
+        
+        file1.drop(['volume','bid_volume1','ask_volume1','turnover','open_interest'],axis=1,inplace=True)
+        if 'key' in file1.columns:
+             file1.drop(['key'],axis=1,inplace=True) 
+             
+        file1.insert(0,'key',dfkey)
+        
+        file1.to_csv('clean_'+filename,index=False)
+   
+
+     
+def sortdata(names):
+    """
+    讲得到关键字之后的数据进行重新排序
+    前一天晚上的数据关键字减去一部分使得排序时排在第二天早晨9:00前
+    """
+    for filename in names[0][:]:
+        file=pd.read_csv(filename)
+        #前一天的期权期货数据关键字减去21:00:00
+        file['key'][file['key']>210000000]-=210000000
+        file=file.sort(['key'],ascending=True)
+        file.to_csv('sort_'+filename,index=False)
+ 
+
+   
+def rename(names,pre,namesfile): 
+    rname=[]
+    lennames=len(names)
+    for num in range(lennames):
+        name=pre+str(names[0][num])
+        rname.append(name)
+    rname=pd.DataFrame(rname)
+    rname.to_csv(namesfile,index=False,header=False)
+    
+#def mergedata():
+    """
+    这个函数是对数据进行merge
+    从而得到每个执行价格K下的S和
+    """
+    
+    
+#这段是运行时间比较长，所以用Beep 提醒
+# 调用上面的函数，得到处理完成的数据   
+try:    
+    names=pd.read_csv("name.csv",header=None)
+    dataclean(names)
+    rename(names,'clean_','renames1.csv')
+    names=pd.read_csv("renames1.csv",header=None)
+    sortdata(names)
+    rename(names,'sort_','renames2.csv')
+    names=pd.read_csv("renames2.csv",header=None)
+    operate(names)
+    winsound.Beep(600,1000)
+finally:
+    winsound.Beep(600,1000)
